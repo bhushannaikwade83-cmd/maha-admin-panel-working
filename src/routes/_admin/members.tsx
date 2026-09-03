@@ -55,7 +55,7 @@ function MembersPage() {
             societies.data.map((s) => (
               <button
                 key={s.id}
-                onClick={() => navigate({ to: "/_admin/members/$societyId", params: { societyId: s.id } })}
+                onClick={() => navigate({ to: "/members/$societyId", params: { societyId: s.id } })}
                 className="rounded-lg border-2 border-border bg-card p-4 text-left transition-all hover:border-primary/50"
               >
                 <h3 className="font-semibold text-foreground">{s.name}</h3>
