@@ -1,13 +1,10 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
-import { apiPost } from "@/lib/api";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { membersQuery, societiesQuery, type Member } from "@/lib/admin-data";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
+import { useMutation } from "@tanstack/react-query";
+import { apiPost } from "@/lib/api";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_admin/members")({
@@ -27,38 +24,10 @@ export const Route = createFileRoute("/_admin/members")({
 });
 
 function MembersPage() {
+  const navigate = useNavigate();
   const qc = useQueryClient();
   const societies = useQuery(societiesQuery);
   const members = useQuery(membersQuery);
-  const [selectedSociety, setSelectedSociety] = useState<string | null>(null);
-  const [formData, setFormData] = useState({
-    secretary_name: "",
-    phone: "",
-    is_committee: false,
-  });
-
-  const invalidate = () => qc.invalidateQueries({ queryKey: ["members"] });
-
-  const addMember = useMutation({
-    mutationFn: async () => {
-      if (!selectedSociety) throw new Error("Select a society first");
-      if (!formData.secretary_name) throw new Error("Name is required");
-      if (!formData.phone) throw new Error("Phone is required");
-
-      await apiPost("admin-add-member.php", {
-        society_id: selectedSociety,
-        secretary_name: formData.secretary_name,
-        phone: formData.phone,
-        is_committee: formData.is_committee ? 1 : 0,
-      });
-    },
-    onSuccess: () => {
-      toast.success("Member added successfully");
-      setFormData({ secretary_name: "", phone: "", is_committee: false });
-      invalidate();
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
 
   const updateMember = useMutation({
     mutationFn: async ({ id, patch }: { id: string; patch: Partial<Member> }) => {
@@ -68,12 +37,9 @@ function MembersPage() {
       if (patch.approval_status !== undefined) payload['approval_status'] = patch.approval_status;
       await apiPost("admin-update-member.php", payload);
     },
-    onSuccess: invalidate,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["members"] }),
     onError: (e: Error) => toast.error(e.message),
   });
-
-  const societyName = (id: string | null) =>
-    societies.data?.find((s) => s.id === id)?.name ?? "Unassigned";
 
   return (
     <div className="mx-auto max-w-6xl">
@@ -89,12 +55,8 @@ function MembersPage() {
             societies.data.map((s) => (
               <button
                 key={s.id}
-                onClick={() => setSelectedSociety(s.id)}
-                className={`rounded-lg border-2 p-4 text-left transition-all ${
-                  selectedSociety === s.id
-                    ? "border-primary bg-primary/10"
-                    : "border-border bg-card hover:border-primary/50"
-                }`}
+                onClick={() => navigate({ to: "/_admin/members/$societyId", params: { societyId: s.id } })}
+                className="rounded-lg border-2 border-border bg-card p-4 text-left transition-all hover:border-primary/50"
               >
                 <h3 className="font-semibold text-foreground">{s.name}</h3>
                 <p className="mt-1 text-sm text-muted-foreground">
@@ -105,9 +67,7 @@ function MembersPage() {
                   <span className="text-xs font-medium text-muted-foreground">
                     Members: {members.data?.filter((m) => m.society_id === s.id).length ?? 0}
                   </span>
-                  {selectedSociety === s.id && (
-                    <span className="text-xs font-semibold text-primary">✓ Selected</span>
-                  )}
+                  <span className="text-xs text-primary">→</span>
                 </div>
               </button>
             ))
@@ -116,69 +76,6 @@ function MembersPage() {
           )}
         </div>
       </section>
-
-      {selectedSociety && (
-        <section className="mt-8 rounded-xl border border-border bg-card p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-foreground">
-            Add Member to {societies.data?.find((s) => s.id === selectedSociety)?.name}
-          </h2>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              addMember.mutate();
-            }}
-            className="mt-4 space-y-4"
-          >
-            <div>
-              <Label htmlFor="name">Name *</Label>
-              <Input
-                id="name"
-                value={formData.secretary_name}
-                onChange={(e) =>
-                  setFormData((p) => ({ ...p, secretary_name: e.target.value }))
-                }
-                placeholder="Member name"
-                required
-              />
-            </div>
-            <div>
-              <Label htmlFor="phone">Phone *</Label>
-              <Input
-                id="phone"
-                value={formData.phone}
-                onChange={(e) => setFormData((p) => ({ ...p, phone: e.target.value }))}
-                placeholder="Phone number"
-                required
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <Checkbox
-                id="committee"
-                checked={formData.is_committee}
-                onCheckedChange={(v) =>
-                  setFormData((p) => ({ ...p, is_committee: Boolean(v) }))
-                }
-              />
-              <Label htmlFor="committee">Committee Member</Label>
-            </div>
-            <div className="flex gap-2 pt-2">
-              <Button type="submit" disabled={addMember.isPending}>
-                {addMember.isPending ? "Adding…" : "Add Member"}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  setSelectedSociety(null);
-                  setFormData({ secretary_name: "", phone: "", is_committee: false });
-                }}
-              >
-                Cancel
-              </Button>
-            </div>
-          </form>
-        </section>
-      )}
 
       <div className="mt-8 overflow-x-auto rounded-xl border border-border bg-card shadow-sm">
         <table className="w-full text-sm">
@@ -211,7 +108,9 @@ function MembersPage() {
               <tr key={m.id} className="border-b border-border last:border-0">
                 <td className="px-4 py-3 font-medium text-card-foreground">{m.secretary_name}</td>
                 <td className="px-4 py-3 text-muted-foreground">{m.phone ?? "—"}</td>
-                <td className="px-4 py-3 text-muted-foreground">{societyName(m.society_id)}</td>
+                <td className="px-4 py-3 text-muted-foreground">
+                  {societies.data?.find((s) => s.id === m.society_id)?.name ?? "Unassigned"}
+                </td>
                 <td className="px-4 py-3">
                   <Switch
                     checked={m.is_enabled}
