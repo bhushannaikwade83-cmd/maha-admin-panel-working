@@ -1,9 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { apiPost } from "@/lib/api";
 import { membersQuery, societiesQuery, type Member } from "@/lib/admin-data";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_admin/members")({
@@ -26,8 +30,35 @@ function MembersPage() {
   const qc = useQueryClient();
   const societies = useQuery(societiesQuery);
   const members = useQuery(membersQuery);
+  const [selectedSociety, setSelectedSociety] = useState<string | null>(null);
+  const [formData, setFormData] = useState({
+    secretary_name: "",
+    phone: "",
+    is_committee: false,
+  });
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ["members"] });
+
+  const addMember = useMutation({
+    mutationFn: async () => {
+      if (!selectedSociety) throw new Error("Select a society first");
+      if (!formData.secretary_name) throw new Error("Name is required");
+      if (!formData.phone) throw new Error("Phone is required");
+
+      await apiPost("admin-add-member.php", {
+        society_id: selectedSociety,
+        secretary_name: formData.secretary_name,
+        phone: formData.phone,
+        is_committee: formData.is_committee ? 1 : 0,
+      });
+    },
+    onSuccess: () => {
+      toast.success("Member added successfully");
+      setFormData({ secretary_name: "", phone: "", is_committee: false });
+      invalidate();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
 
   const updateMember = useMutation({
     mutationFn: async ({ id, patch }: { id: string; patch: Partial<Member> }) => {
@@ -52,25 +83,102 @@ function MembersPage() {
       </p>
 
       <section className="mt-6">
-        <h2 className="text-sm font-medium text-muted-foreground">Societies</h2>
-        <div className="mt-3 flex flex-wrap gap-2">
+        <h2 className="text-lg font-semibold text-foreground mb-4">Select Society</h2>
+        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
           {societies.data?.length ? (
             societies.data.map((s) => (
-              <span
+              <button
                 key={s.id}
-                className="rounded-full border border-border bg-card px-3 py-1 text-sm text-card-foreground"
+                onClick={() => setSelectedSociety(s.id)}
+                className={`rounded-lg border-2 p-4 text-left transition-all ${
+                  selectedSociety === s.id
+                    ? "border-primary bg-primary/10"
+                    : "border-border bg-card hover:border-primary/50"
+                }`}
               >
-                {s.name}
-                <span className="ml-2 text-muted-foreground">
-                  {members.data?.filter((m) => m.society_id === s.id).length ?? 0}
-                </span>
-              </span>
+                <h3 className="font-semibold text-foreground">{s.name}</h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  📍 {s.address}
+                </p>
+                <p className="text-sm text-muted-foreground">{s.city}</p>
+                <div className="mt-3 flex items-center justify-between">
+                  <span className="text-xs font-medium text-muted-foreground">
+                    Members: {members.data?.filter((m) => m.society_id === s.id).length ?? 0}
+                  </span>
+                  {selectedSociety === s.id && (
+                    <span className="text-xs font-semibold text-primary">✓ Selected</span>
+                  )}
+                </div>
+              </button>
             ))
           ) : (
             <p className="text-sm text-muted-foreground">No societies yet.</p>
           )}
         </div>
       </section>
+
+      {selectedSociety && (
+        <section className="mt-8 rounded-xl border border-border bg-card p-6 shadow-sm">
+          <h2 className="text-lg font-semibold text-foreground">
+            Add Member to {societies.data?.find((s) => s.id === selectedSociety)?.name}
+          </h2>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              addMember.mutate();
+            }}
+            className="mt-4 space-y-4"
+          >
+            <div>
+              <Label htmlFor="name">Name *</Label>
+              <Input
+                id="name"
+                value={formData.secretary_name}
+                onChange={(e) =>
+                  setFormData((p) => ({ ...p, secretary_name: e.target.value }))
+                }
+                placeholder="Member name"
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="phone">Phone *</Label>
+              <Input
+                id="phone"
+                value={formData.phone}
+                onChange={(e) => setFormData((p) => ({ ...p, phone: e.target.value }))}
+                placeholder="Phone number"
+                required
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="committee"
+                checked={formData.is_committee}
+                onCheckedChange={(v) =>
+                  setFormData((p) => ({ ...p, is_committee: Boolean(v) }))
+                }
+              />
+              <Label htmlFor="committee">Committee Member</Label>
+            </div>
+            <div className="flex gap-2 pt-2">
+              <Button type="submit" disabled={addMember.isPending}>
+                {addMember.isPending ? "Adding…" : "Add Member"}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setSelectedSociety(null);
+                  setFormData({ secretary_name: "", phone: "", is_committee: false });
+                }}
+              >
+                Cancel
+              </Button>
+            </div>
+          </form>
+        </section>
+      )}
 
       <div className="mt-8 overflow-x-auto rounded-xl border border-border bg-card shadow-sm">
         <table className="w-full text-sm">
