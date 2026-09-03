@@ -1,10 +1,18 @@
 export const API_BASE = "https://digitrixmedia.com/mahamaintainpro/api";
 
 async function request<T>(file: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_BASE}/${file}`, {
-    headers: { "Content-Type": "application/json" },
+  // Cache-bust: server sends max-age=86400, so a stale 500 can stick in disk cache
+  const url = `${API_BASE}/${file}${file.includes("?") ? "&" : "?"}_ts=${Date.now()}`;
+  const isPost = init?.method === "POST";
+  const res = await fetch(url, {
+    cache: "no-store",
+    mode: "cors",
+    // GET stays a "simple request" (no Content-Type header) so no preflight is needed
+    ...(isPost ? { headers: { "Content-Type": "application/json" } } : {}),
     ...init,
   });
+
+
   const text = await res.text();
   let json: any;
   try {
