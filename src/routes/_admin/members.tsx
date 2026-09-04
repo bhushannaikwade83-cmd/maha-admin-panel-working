@@ -35,6 +35,7 @@ function MembersPage() {
     secretary_name: "",
     phone: "",
     is_committee: false,
+    designation: "MEMBER",
   });
 
   const addMember = useMutation({
@@ -48,11 +49,12 @@ function MembersPage() {
         secretary_name: formData.secretary_name,
         phone: formData.phone,
         is_committee: formData.is_committee ? 1 : 0,
+        designation: formData.designation,
       });
     },
     onSuccess: () => {
       toast.success("Member added successfully");
-      setFormData({ secretary_name: "", phone: "", is_committee: false });
+      setFormData({ secretary_name: "", phone: "", is_committee: false, designation: "MEMBER" });
       qc.invalidateQueries({ queryKey: ["members"] });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -154,6 +156,24 @@ function MembersPage() {
               />
               <Label htmlFor="committee">Committee Member</Label>
             </div>
+            {formData.is_committee && (
+              <div>
+                <Label htmlFor="designation">Designation *</Label>
+                <select
+                  id="designation"
+                  value={formData.designation}
+                  onChange={(e) =>
+                    setFormData((p) => ({ ...p, designation: e.target.value }))
+                  }
+                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                >
+                  <option value="MEMBER">Member</option>
+                  <option value="CHAIRMAN">Chairman</option>
+                  <option value="TREASURER">Treasurer</option>
+                  <option value="SECRETARY">Secretary</option>
+                </select>
+              </div>
+            )}
             <div className="flex gap-2 pt-4">
               <Button type="submit" disabled={addMember.isPending}>
                 {addMember.isPending ? "Adding…" : "Add Member"}
@@ -163,7 +183,7 @@ function MembersPage() {
                 variant="outline"
                 onClick={() => {
                   setSelectedSociety(null);
-                  setFormData({ secretary_name: "", phone: "", is_committee: false });
+                  setFormData({ secretary_name: "", phone: "", is_committee: false, designation: "MEMBER" });
                 }}
               >
                 Cancel
