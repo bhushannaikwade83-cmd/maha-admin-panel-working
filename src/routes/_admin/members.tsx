@@ -202,20 +202,19 @@ function MembersPage() {
               <th className="px-4 py-3 font-medium">Society</th>
               <th className="px-4 py-3 font-medium">Enabled</th>
               <th className="px-4 py-3 font-medium">Committee</th>
-              <th className="px-4 py-3 font-medium">Approval</th>
             </tr>
           </thead>
           <tbody>
             {members.isLoading && (
               <tr>
-                <td className="px-4 py-6 text-muted-foreground" colSpan={6}>
+                <td className="px-4 py-6 text-muted-foreground" colSpan={5}>
                   Loading…
                 </td>
               </tr>
             )}
             {!members.isLoading && (members.data?.length ?? 0) === 0 && (
               <tr>
-                <td className="px-4 py-6 text-muted-foreground" colSpan={6}>
+                <td className="px-4 py-6 text-muted-foreground" colSpan={5}>
                   No members yet.
                 </td>
               </tr>
@@ -242,43 +241,6 @@ function MembersPage() {
                       updateMember.mutate({ id: m.id, patch: { is_committee: v } })
                     }
                   />
-                </td>
-                <td className="px-4 py-3">
-                  {m.approval_status === "approved" ? (
-                    <span className="rounded-full bg-primary/10 px-2 py-1 text-xs font-medium text-primary">
-                      Approved
-                    </span>
-                  ) : m.approval_status === "rejected" ? (
-                    <span className="rounded-full bg-destructive/10 px-2 py-1 text-xs font-medium text-destructive">
-                      Rejected
-                    </span>
-                  ) : (
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        onClick={() =>
-                          updateMember.mutate({
-                            id: m.id,
-                            patch: { approval_status: "approved" },
-                          })
-                        }
-                      >
-                        Approve
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() =>
-                          updateMember.mutate({
-                            id: m.id,
-                            patch: { approval_status: "rejected" },
-                          })
-                        }
-                      >
-                        Reject
-                      </Button>
-                    </div>
-                  )}
                 </td>
               </tr>
             ))}
