@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { membersQuery, societiesQuery, type Member } from "@/lib/admin-data";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -73,7 +73,7 @@ function MembersPage() {
   });
 
   // Debug: Log members data
-  React.useEffect(() => {
+  useEffect(() => {
     console.log("📋 MEMBERS DATA:", members.data);
     if (members.data?.length) {
       members.data.forEach((m, i) => {
