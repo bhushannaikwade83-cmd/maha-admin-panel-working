@@ -72,6 +72,23 @@ function MembersPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  // Debug: Log members data
+  React.useEffect(() => {
+    console.log("📋 MEMBERS DATA:", members.data);
+    if (members.data?.length) {
+      members.data.forEach((m, i) => {
+        console.log(`Member ${i}:`, {
+          id: m.id,
+          secretary_name: m.secretary_name,
+          phone: m.phone,
+          society_id: m.society_id,
+          is_committee: m.is_committee,
+          designation: m.designation,
+        });
+      });
+    }
+  }, [members.data]);
+
   return (
     <div className="mx-auto max-w-6xl">
       <h1 className="text-2xl font-semibold tracking-tight text-foreground">Members</h1>
