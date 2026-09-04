@@ -210,60 +210,65 @@ function MembersPage() {
         </section>
       )}
 
-      <div className="mt-8 overflow-x-auto rounded-xl border border-border bg-card shadow-sm">
-        <table className="w-full text-sm">
-          <thead className="border-b border-border bg-muted/50 text-left text-muted-foreground">
-            <tr>
-              <th className="px-4 py-3 font-medium">Name</th>
-              <th className="px-4 py-3 font-medium">Phone</th>
-              <th className="px-4 py-3 font-medium">Society</th>
-              <th className="px-4 py-3 font-medium">Enabled</th>
-              <th className="px-4 py-3 font-medium">Committee</th>
-            </tr>
-          </thead>
-          <tbody>
-            {members.isLoading && (
+      {selectedSociety && (
+        <div className="mt-8 overflow-x-auto rounded-xl border border-border bg-card shadow-sm">
+          <div className="px-6 py-4 border-b border-border">
+            <h2 className="text-lg font-semibold text-foreground">
+              Members of {societies.data?.find((s) => s.id === selectedSociety)?.name}
+            </h2>
+          </div>
+          <table className="w-full text-sm">
+            <thead className="border-b border-border bg-muted/50 text-left text-muted-foreground">
               <tr>
-                <td className="px-4 py-6 text-muted-foreground" colSpan={5}>
-                  Loading…
-                </td>
+                <th className="px-4 py-3 font-medium">Name</th>
+                <th className="px-4 py-3 font-medium">Phone</th>
+                <th className="px-4 py-3 font-medium">Designation</th>
+                <th className="px-4 py-3 font-medium">Enabled</th>
+                <th className="px-4 py-3 font-medium">Committee</th>
               </tr>
-            )}
-            {!members.isLoading && (members.data?.length ?? 0) === 0 && (
-              <tr>
-                <td className="px-4 py-6 text-muted-foreground" colSpan={5}>
-                  No members yet.
-                </td>
-              </tr>
-            )}
-            {members.data?.map((m) => (
-              <tr key={m.id} className="border-b border-border last:border-0">
-                <td className="px-4 py-3 font-medium text-card-foreground">{m.secretary_name}</td>
-                <td className="px-4 py-3 text-muted-foreground">{m.phone ?? "—"}</td>
-                <td className="px-4 py-3 text-muted-foreground">
-                  {societies.data?.find((s) => s.id === m.society_id)?.name ?? "Unassigned"}
-                </td>
-                <td className="px-4 py-3">
-                  <Switch
-                    checked={m.is_enabled}
-                    onCheckedChange={(v) =>
-                      updateMember.mutate({ id: m.id, patch: { is_enabled: v } })
-                    }
-                  />
-                </td>
-                <td className="px-4 py-3">
-                  <Switch
-                    checked={m.is_committee}
-                    onCheckedChange={(v) =>
-                      updateMember.mutate({ id: m.id, patch: { is_committee: v } })
-                    }
-                  />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {members.isLoading && (
+                <tr>
+                  <td className="px-4 py-6 text-muted-foreground" colSpan={5}>
+                    Loading…
+                  </td>
+                </tr>
+              )}
+              {!members.isLoading && (members.data?.filter((m) => m.society_id === selectedSociety).length ?? 0) === 0 && (
+                <tr>
+                  <td className="px-4 py-6 text-muted-foreground" colSpan={5}>
+                    No members in this society yet.
+                  </td>
+                </tr>
+              )}
+              {members.data?.filter((m) => m.society_id === selectedSociety).map((m) => (
+                <tr key={m.id} className="border-b border-border last:border-0">
+                  <td className="px-4 py-3 font-medium text-card-foreground">{m.secretary_name}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{m.phone ?? "—"}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{m.designation ?? "MEMBER"}</td>
+                  <td className="px-4 py-3">
+                    <Switch
+                      checked={m.is_enabled}
+                      onCheckedChange={(v) =>
+                        updateMember.mutate({ id: m.id, patch: { is_enabled: v } })
+                      }
+                    />
+                  </td>
+                  <td className="px-4 py-3">
+                    <Switch
+                      checked={m.is_committee}
+                      onCheckedChange={(v) =>
+                        updateMember.mutate({ id: m.id, patch: { is_committee: v } })
+                      }
+                    />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
